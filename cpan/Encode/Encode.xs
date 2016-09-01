@@ -99,7 +99,7 @@ do_fallback_cb(pTHX_ UV ch, SV *fallback_cb)
 
 static SV *
 encode_method(pTHX_ const encode_t * enc, const encpage_t * dir, SV * src,
-	      int check, STRLEN * offset, SV * term, int * retcode, 
+	      int check, STRLEN * offset, SV * term, int * retcode,
 	      SV *fallback_cb)
 {
     STRLEN slen;
@@ -121,65 +121,66 @@ encode_method(pTHX_ const encode_t * enc, const encpage_t * dir, SV * src,
     if (offset) {
       s += *offset;
       if (slen > *offset){ /* safeguard against slen overflow */
-      slen -= *offset;
+          slen -= *offset;
       }else{
-      slen = 0;
+          slen = 0;
       }
       tlen = slen;
     }
 
     if (slen == 0){
-    SvCUR_set(dst, 0);
-    SvPOK_only(dst);
-    goto ENCODE_END;
+        SvCUR_set(dst, 0);
+        SvPOK_only(dst);
+        goto ENCODE_END;
     }
 
     while( (code = do_encode(dir, s, &slen, d, dlen, &dlen, !check,
-                 trm, trmlen)) ) 
+                 trm, trmlen)) )
     {
-    SvCUR_set(dst, dlen+ddone);
-    SvPOK_only(dst);
-    
-    if (code == ENCODE_FALLBACK || code == ENCODE_PARTIAL ||
-        code == ENCODE_FOUND_TERM) {
-        break;
-    }
-    switch (code) {
-    case ENCODE_NOSPACE:
-    {	
-        STRLEN more = 0; /* make sure you initialize! */
-        STRLEN sleft;
-        sdone += slen;
-        ddone += dlen;
-        sleft = tlen - sdone;
+        SvCUR_set(dst, dlen+ddone);
+        SvPOK_only(dst);
+
+        if (code == ENCODE_FALLBACK || code == ENCODE_PARTIAL ||
+            code == ENCODE_FOUND_TERM) {
+            break;
+        }
+        switch (code) {
+        case ENCODE_NOSPACE:
+        {
+            STRLEN more = 0; /* make sure you initialize! */
+            STRLEN sleft;
+            sdone += slen;
+            ddone += dlen;
+            sleft = tlen - sdone;
 #if ENCODE_XS_PROFILE >= 2
-        Perl_warn(aTHX_
-              "more=%d, sdone=%d, sleft=%d, SvLEN(dst)=%d\n",
-              more, sdone, sleft, SvLEN(dst));
+            Perl_warn(aTHX_
+                  "more=%d, sdone=%d, sleft=%d, SvLEN(dst)=%d\n",
+                  more, sdone, sleft, SvLEN(dst));
 #endif
-        if (sdone != 0) { /* has src ever been processed ? */
+            if (sdone != 0) { /* has src ever been processed ? */
 #if   ENCODE_XS_USEFP == 2
-        more = (1.0*tlen*SvLEN(dst)+sdone-1)/sdone
-            - SvLEN(dst);
+                more = (1.0*tlen*SvLEN(dst)+sdone-1)/sdone
+                    - SvLEN(dst);
 #elif ENCODE_XS_USEFP
-        more = (STRLEN)((1.0*SvLEN(dst)+1)/sdone * sleft);
+                more = (STRLEN)((1.0*SvLEN(dst)+1)/sdone * sleft);
 #else
-        /* safe until SvLEN(dst) == MAX_INT/16 */
-        more = (16*SvLEN(dst)+1)/sdone/16 * sleft;
+            /* safe until SvLEN(dst) == MAX_INT/16 */
+                more = (16*SvLEN(dst)+1)/sdone/16 * sleft;
 #endif
+            }
+            more += UTF8_MAXLEN; /* insurance policy */
+            d = (U8 *) SvGROW(dst, SvLEN(dst) + more);
+            /* dst need to grow need MORE bytes! */
+            if (ddone >= SvLEN(dst)) {
+                Perl_croak(aTHX_ "Destination couldn't be grown.");
+            }
+            dlen = SvLEN(dst)-ddone-1;
+            d   += ddone;
+            s   += slen;
+            slen = tlen-sdone;
+            continue;
         }
-        more += UTF8_MAXLEN; /* insurance policy */
-        d = (U8 *) SvGROW(dst, SvLEN(dst) + more);
-        /* dst need to grow need MORE bytes! */
-        if (ddone >= SvLEN(dst)) {
-        Perl_croak(aTHX_ "Destination couldn't be grown.");
-        }
-        dlen = SvLEN(dst)-ddone-1;
-        d   += ddone;
-        s   += slen;
-        slen = tlen-sdone;
-        continue;
-    }
+
     case ENCODE_NOREP:
         /* encoding */	
         if (dir == enc->f_utf8) {
@@ -254,18 +255,18 @@ encode_method(pTHX_ const encode_t * enc, const encpage_t * dir, SV * src,
         }
         /* settle variables when fallback */
         d    = (U8 *)SvEND(dst);
-            dlen = SvLEN(dst) - ddone - 1;
+        dlen = SvLEN(dst) - ddone - 1;
         s    = (U8*)SvPVX(src) + sdone;
         slen = tlen - sdone;
         break;
 
-    default:
-        Perl_croak(aTHX_ "Unexpected code %d converting %s %s",
-               code, (dir == enc->f_utf8) ? "to" : "from",
-               enc->name[0]);
-        return &PL_sv_undef;
-    }
-    }
+        default:
+            Perl_croak(aTHX_ "Unexpected code %d converting %s %s",
+                   code, (dir == enc->f_utf8) ? "to" : "from",
+                   enc->name[0]);
+            return &PL_sv_undef;
+        }
+    }   /* End of looping through the string */
  ENCODE_SET_SRC:
     if (check && !(check & ENCODE_LEAVE_SRC)){
     sdone = SvCUR(src) - (slen+sdone);
@@ -288,7 +289,7 @@ encode_method(pTHX_ const encode_t * enc, const encpage_t * dir, SV * src,
     }
 #endif
 
-    if (offset) 
+    if (offset)
       *offset += sdone + slen;
 
  ENCODE_END:
@@ -380,8 +381,8 @@ process_utf8(pTHX_ SV* dst, U8* s, U8* e, SV *check_sv,
 
         /* If not 'strict', all well-formed code points are legal, so we know
          * the failing one has to be not well-formed, use the first byte of it.
-         * If 'strict', it could be either malformed or illegal code point, so
-         * we have to test which */
+         * If 'strict', it could be either malformed or an illegal code point,
+         * so we have to test which */
         if (! strict || ! isUTF8_CHAR(s, e)) {
             uv = utf8n_to_uvchr(s, e - s, &ulen,
                                         UTF8_CHECK_ONLY | UTF8_ALLOW_NONSTRICT);
@@ -409,15 +410,15 @@ process_utf8(pTHX_ SV* dst, U8* s, U8* e, SV *check_sv,
                             ERR_DECODE_NOMAP, "utf8", uv);
         }
         if (check & ENCODE_RETURN_ON_ERR) {
-                break;
+            break;
         }
         if (check & (ENCODE_PERLQQ|ENCODE_HTMLCREF|ENCODE_XMLCREF)){
 	    SV* subchar =
 		(fallback_cb != &PL_sv_undef)
 		? do_fallback_cb(aTHX_ uv, fallback_cb)
-		: newSVpvf(check & ENCODE_PERLQQ 
+		: newSVpvf(check & ENCODE_PERLQQ
 			   ? (ulen == 1 ? "\\x%02" UVXf : "\\x{%04" UVXf "}")
-			   :  check & ENCODE_HTMLCREF ? "&#%" UVuf ";" 
+			   :  check & ENCODE_HTMLCREF ? "&#%" UVuf ";"
 			   : "&#x%" UVxf ";", uv);
 	    if (encode){
 		SvUTF8_off(subchar); /* make sure no decoded string gets in */
@@ -481,7 +482,7 @@ CODE:
     }
     s = (U8 *) SvPV(src, slen);
     e = (U8 *) SvEND(src);
-    /* 
+    /*
      * PerlIO check -- we assume the object is of PerlIO if renewed
      */
     PUSHMARK(sp);
@@ -490,7 +491,7 @@ CODE:
     if (call_method("renewed",G_SCALAR) == 1) {
     SPAGAIN;
     renewed = (bool)POPi;
-    PUTBACK; 
+    PUTBACK;
 #if 0
     fprintf(stderr, "renewed == %d\n", renewed);
 #endif
