@@ -250,6 +250,8 @@ fresh_perl_like(
 );
 SKIP:
 {
+    # F3 is digit 3 in EBCDIC, so doesn't DTRT.  I8(DF) = F3.
+    # perhaps move the I8 translation tabs to test.pl
     ord("A") == 65
       or skip "These tests won't work on EBCIDIC", 3;
     fresh_perl_is(
