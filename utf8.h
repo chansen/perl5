@@ -680,6 +680,19 @@ with a ptr argument.
 				 : isWORDCHAR_utf8((const U8*)p))
 #define isALNUM_lazy_if(p,UTF)   isWORDCHAR_lazy_if(p,UTF)
 
+#define isIDFIRST_lazy_if_safe(p, e, UTF)                                   \
+                    (__ASSERT_(((const U8 *) e - (const U8 *) p) >  0)      \
+                    (IN_BYTES || !UTF)                                      \
+                     ? isIDFIRST(*(p))                                      \
+                     : isIDFIRST_utf8_safe(p, e))
+
+#define isWORDCHAR_lazy_if_safe(p, e, UTF)                                  \
+                    (__ASSERT_(((const U8 *) e - (const U8 *) p) >  0)      \
+                    (IN_BYTES || !UTF)                                      \
+                     ? isWORDCHAR(*(p))                                     \
+                     : isWORDCHAR_utf8_safe((U8 *) p, (U8 *) e))
+
+
 #define UTF8_MAXLEN UTF8_MAXBYTES
 
 /* A Unicode character can fold to up to 3 characters */
