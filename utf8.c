@@ -437,6 +437,7 @@ S_does_utf8_overflow(const U8 * const s, const U8 * e)
 {
     const U8 *x;
     const U8 * y = (const U8 *) HIGHEST_REPRESENTABLE_UTF8;
+    const STRLEN len = e - s;
 
     /* Returns a boolean as to if this UTF-8 string would overflow a UV on this
      * platform, that is if it represents a code point larger than the highest
@@ -457,10 +458,10 @@ S_does_utf8_overflow(const U8 * const s, const U8 * e)
     /* On 32 bit ASCII machines, many overlongs that start with FF don't
      * overflow */
 
-    if (isFF_OVERLONG(s, e - s)) {
+    if (isFF_OVERLONG(s, len)) {
         const U8 max_32_bit_overlong[] = "\xFF\x80\x80\x80\x80\x80\x80\x84";
         return memGE(s, max_32_bit_overlong,
-                                MIN(e - s, sizeof(max_32_bit_overlong) - 1));
+                                MIN(len, sizeof(max_32_bit_overlong) - 1));
     }
 
 #endif
